@@ -3,7 +3,7 @@ use std::ops::{Mul, Neg};
 use crate::engine::{Coord, Offset};
 use cgmath::{ElementWise, EuclideanSpace, Vector2, Zero};
 
-use super::Matrix;
+use super::{Color, Matrix};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) struct Piece {
@@ -95,6 +95,18 @@ impl Kind {
         match self {
             Self::I => 4,
             _ => 3,
+        }
+    }
+
+    pub fn color(&self) -> Color {
+        match self {
+            Kind::O => Color::Yellow,
+            Kind::I => Color::Cyan,
+            Kind::T => Color::Pruple,
+            Kind::L => Color::Orange,
+            Kind::J => Color::Blue,
+            Kind::S => Color::Green,
+            Kind::Z => Color::Red,
         }
     }
 }

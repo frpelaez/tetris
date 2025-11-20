@@ -57,8 +57,9 @@ impl Engine {
             "Tried to place cursor in an invalid location {:?}",
             cursor
         );
+        let color = cursor.kind.color();
         for coord in cursor.cells().unwrap() {
-            self.matrix[coord] = true;
+            self.matrix[coord] = Some(color);
         }
     }
 
@@ -73,9 +74,41 @@ impl Engine {
         self.cursor = Some(new);
         Ok(())
     }
+
+    fn try_tick_down(&mut self) {
+        self.cursor = Some(self.ticked_down_cursor().unwrap());
+    }
+
+    fn ticked_down_cursor(&self) -> Option<Piece> {
+        let cursor = self.cursor?;
+        let new = cursor.moved_by(Offset::new(0, -1));
+        (!self.matrix.is_clipping(&new)).then_some(new)
+    }
+
+    fn cursor_has_hit_bottom(&self) -> bool {
+        self.cursor.is_some() && self.ticked_down_cursor().is_none()
+    }
+
+    fn hard_drop(&mut self) {
+        while let Some(new) = self.ticked_down_cursor() {
+            self.cursor = Some(new);
+        }
+        self.place_cursor();
+    }
 }
 
-struct Matrix([bool; Self::WIDTH * Self::HEIGHT]);
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Color {
+    Yellow,
+    Cyan,
+    Pruple,
+    Orange,
+    Blue,
+    Green,
+    Red,
+}
+
+struct Matrix([Option<Color>; Self::WIDTH * Self::HEIGHT]);
 
 impl Matrix {
     const WIDTH: usize = 10;
@@ -83,7 +116,7 @@ impl Matrix {
     const SIZE: usize = Self::WIDTH * Self::HEIGHT;
 
     fn blank() -> Self {
-        Self([false; Self::SIZE])
+        Self([None; Self::SIZE])
     }
 
     fn in_matrix(coord: Coord) -> bool {
@@ -104,21 +137,21 @@ impl Matrix {
         };
         cells
             .into_iter()
-            .all(|coord| Matrix::in_matrix(coord) && !self[coord])
+            .all(|coord| Matrix::in_matrix(coord) && self[coord].is_none())
     }
 
     fn is_clipping(&self, piece: &Piece) -> bool {
         let Some(cells) = piece.cells() else {
-            return false;
+            return true;
         };
         cells
             .into_iter()
-            .all(|coord| !Matrix::in_matrix(coord) || !self[coord])
+            .any(|coord| !Matrix::in_matrix(coord) || self[coord].is_some())
     }
 }
 
 impl Index<Coord> for Matrix {
-    type Output = bool;
+    type Output = Option<Color>;
     fn index(&self, coord: Coord) -> &Self::Output {
         assert!(Self::in_matrix(coord));
         &self.0[Self::index(coord)]
