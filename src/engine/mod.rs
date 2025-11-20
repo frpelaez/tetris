@@ -67,12 +67,11 @@ impl Engine {
             return Ok(());
         };
         let new = cursor.moved_by(r#move.offset());
-        if self.matrix.is_placeable(&new) {
-            self.cursor = Some(new);
-            Ok(())
-        } else {
-            Err(())
-        }
+        if self.matrix.is_clipping(&new) {
+            return Err(());
+        };
+        self.cursor = Some(new);
+        Ok(())
     }
 }
 
